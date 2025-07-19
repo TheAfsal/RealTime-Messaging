@@ -7,26 +7,18 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
 @Module({
   imports: [
     ClientsModule.register([
-      // Publisher config
       {
-        name: 'RABBITMQ_CLIENT_B_PUBLISHER',
+        name: 'RABBITMQ_CLIENT_B',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://guest:guest@localhost:5672'],
-          queue: 'to-clientA',
-          queueOptions: { durable: true },
-          noAck: true, // publisher doesn't care about acks
-        },
-      },
-      // Consumer config
-      {
-        name: 'RABBITMQ_CLIENT_B_CONSUMER',
-        transport: Transport.RMQ,
-        options: {
-          urls: ['amqp://guest:guest@localhost:5672'],
-          queue: 'to-clientB',
-          queueOptions: { durable: true },
-          noAck: false, // we want to manually ack messages
+          urls: [
+            process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
+          ],
+          queue: process.env.RABBITMQ_QUEUE_A || 'to-clientA',
+          queueOptions: {
+            durable: true,
+          },
+          noAck: true,
         },
       },
     ]),
@@ -35,10 +27,10 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
   providers: [
     ClientBService,
     MessagingGateway,
-    {
-      provide: 'RABBITMQ_CLIENT_B',
-      useExisting: 'RABBITMQ_CLIENT_B_PUBLISHER',
-    },
+    // {
+    //   provide: 'RABBITMQ_CLIENT_B',
+    //   useExisting: 'RABBITMQ_CLIENT_B_PUBLISHER',
+    // },
   ],
 })
 export class ClientBModule {}
