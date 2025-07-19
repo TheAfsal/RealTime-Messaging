@@ -8,18 +8,25 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
   imports: [
     ClientsModule.register([
       {
-        name: 'RABBITMQ_CLIENT_A',
+        name: 'RABBITMQ_CLIENT_A_PUBLISHER',
         transport: Transport.RMQ,
         options: {
           urls: ['amqp://guest:guest@localhost:5672'],
           queue: 'to-clientB',
           queueOptions: { durable: true },
-          noAck: false,
+          noAck: true, // Publisher does not need acknowledgment
         },
       },
     ]),
   ],
   controllers: [ClientAController],
-  providers: [ClientAService, MessagingGateway],
+  providers: [
+    ClientAService,
+    MessagingGateway,
+    {
+      provide: 'RABBITMQ_CLIENT_A',
+      useExisting: 'RABBITMQ_CLIENT_A_PUBLISHER', // Use publisher for sending
+    },
+  ],
 })
 export class ClientAModule {}

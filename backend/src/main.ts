@@ -4,18 +4,29 @@ import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // Enable CORS for frontend
+
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: 'http://localhost:5173',
     methods: 'GET,POST',
   });
 
-  // Connect microservices for RabbitMQ
+  // Microservice for consuming messages for clientA (from queue 'to-clientA')
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: {
       urls: ['amqp://guest:guest@localhost:5672'],
-      queue: 'main',
+      queue: 'to-clientA',
+      queueOptions: { durable: true },
+      noAck: false,
+    },
+  });
+
+  // Microservice for consuming messages for clientB (from queue 'to-clientB')
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://guest:guest@localhost:5672'],
+      queue: 'to-clientB',
       queueOptions: { durable: true },
       noAck: false,
     },
@@ -25,4 +36,5 @@ async function bootstrap() {
   await app.listen(3001);
   console.log('Backend running on http://localhost:3001');
 }
+
 bootstrap();

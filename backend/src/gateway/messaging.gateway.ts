@@ -1,16 +1,18 @@
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 
-@WebSocketGateway({ cors: { origin: 'http://localhost:3000' } })
+@WebSocketGateway({ cors: { origin: 'http://localhost:5173' } })
 export class MessagingGateway {
   @WebSocketServer()
   server: Server;
 
   notifyClientA(message: string) {
-    this.server.emit('message-to-clientA', message);
+    console.log('@@ notifyClientA:', message);
+    this.server.emit('message-to-client-a', message);
   }
 
   notifyClientB(message: string) {
-    this.server.emit('message-to-clientB', message);
+    console.log('@@ notifyClientB:', message);
+    this.server.emit('message-to-client-b', message);
   }
 }

@@ -12,24 +12,36 @@ const socket = io('http://localhost:3001', { transports: ['websocket'] });
 const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<string[]>([]);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
+    socket.on('connect', () => {
+      console.log(`Connected to WebSocket for ${clientId}`);
+      setSocketConnected(true);
+    });
+    socket.on('disconnect', () => {
+      console.log(`Disconnected from WebSocket for ${clientId}`);
+      setSocketConnected(false);
+    });
     socket.on(`message-to-${clientId}`, (msg: string) => {
+      console.log(`Received message for ${clientId}: ${msg}`);
       setMessages((prev) => [...prev, msg]);
     });
 
     return () => {
       socket.off(`message-to-${clientId}`);
+      socket.off('connect');
+      socket.off('disconnect');
     };
   }, [clientId]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
     try {
+      console.log(`Sending message from ${clientId}: ${message}`);
       await axios.get(`http://localhost:3001/${clientId}/send`, {
         params: { message },
       });
-      setMessages((prev) => [...prev, `[You]: ${message}`]);
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -59,6 +71,9 @@ const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
           Send
         </button>
       </div>
+      <p className="text-sm text-gray-500 mt-2">
+        WebSocket Status: {socketConnected ? 'Connected' : 'Disconnected'}
+      </p>
     </div>
   );
 };
