@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import API from "../services/api";
 import io from "socket.io-client";
 
 interface ClientPanelProps {
@@ -42,9 +42,9 @@ const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
     if (!message.trim()) return;
     try {
       console.log(`Sending message from ${clientId}: ${message}`);
-      await axios.get(`http://localhost:3001/${clientId}/send`, {
-        params: { message },
-      });
+      console.log(message);
+
+      await API.get(`/${clientId}/send?message=${message}`);
       setMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
