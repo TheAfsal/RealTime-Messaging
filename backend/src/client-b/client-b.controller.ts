@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, Query } from '@nestjs/common';
+import { Controller, Logger, Post, Query } from '@nestjs/common';
 import {
   MessagePattern,
   Ctx,
@@ -25,7 +25,7 @@ export class ClientBController {
     this.logger.log('Client B consumer client initialized');
   }
 
-  @Get('send')
+  @Post('send')
   async sendMessage(@Query('message') message: string) {
     const finalMessage = message || 'Hello A';
     this.logger.log(`Sending message to Client A: ${finalMessage}`);

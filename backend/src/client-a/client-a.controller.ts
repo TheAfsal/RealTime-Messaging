@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Logger } from '@nestjs/common';
+import { Controller, Query, Logger, Post } from '@nestjs/common';
 import { ClientAService } from './client-a.service';
 import { MessagePattern, Ctx, RmqContext } from '@nestjs/microservices';
 import { MessagingGateway } from '../gateway/messaging.gateway';
@@ -21,7 +21,7 @@ export class ClientAController {
   }
 
   // HTTP GET endpoint to send a message from Client A to Client B
-  @Get('send')
+  @Post('send')
   async sendMessage(@Query('message') message: string): Promise<void> {
     const finalMessage = message || 'Hello B';
     this.logger.log(`Attempting to send message to Client B: ${finalMessage}`);
