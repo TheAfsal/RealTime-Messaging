@@ -1,8 +1,13 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common';
 import { ClientAService } from './client-a.service';
-import { Ctx, MessagePattern, RmqContext } from '@nestjs/microservices';
+import { MessagePattern, Ctx, RmqContext } from '@nestjs/microservices';
+import { MessagingGateway } from '../gateway/messaging.gateway';
 import { Channel, Message } from 'amqplib';
-import { MessagingGateway } from 'src/gateway/messaging.gateway';
+
+interface MessagePayload {
+  sender: string;
+  message: string;
+}
 
 @Controller('client-a')
 export class ClientAController {
@@ -15,33 +20,47 @@ export class ClientAController {
     this.logger.log('Client A controller initialized');
   }
 
+  // HTTP GET endpoint to send a message from Client A to Client B
   @Get('send')
-  sendMessage(@Query('message') message: string) {
+  async sendMessage(@Query('message') message: string): Promise<void> {
     const finalMessage = message || 'Hello B';
-    this.logger.log(`Sending message to Client B: ${finalMessage}`);
-    return this.clientAService.sendMessageToClientB(finalMessage);
+    this.logger.log(`Attempting to send message to Client B: ${finalMessage}`);
+    try {
+      await this.clientAService.sendMessageToClientB(finalMessage);
+      this.logger.log(`Message sent successfully: ${finalMessage}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to send message: ${err.message}`, err.stack);
+      throw new Error(`Send failed: ${err.message}`);
+    }
   }
 
+  // RabbitMQ listener for messages sent to 'to-clientA' queue
   @MessagePattern('to-clientA')
-  handleMessageFromClientB(@Ctx() context: RmqContext) {
-    const channel = context.getChannelRef() as Channel;
-    const originalMsg = context.getMessage() as Message;
+  handleMessageFromClientB(@Ctx() context: RmqContext): void {
+    const channel: Channel = context.getChannelRef() as Channel;
+    const originalMsg: Message = context.getMessage() as Message;
 
-    this.logger.log('Raw message content: ' + originalMsg.content.toString());
+    const rawContent = originalMsg.content.toString();
+    this.logger.log('Raw message content: ' + rawContent);
 
     try {
-      const { data } = JSON.parse(originalMsg.content.toString());
-      const { sender, message } = data;
+      const parsed = JSON.parse(rawContent) as { data: MessagePayload };
+      const { sender, message } = parsed.data;
 
       if (!message) {
-        throw new Error('Missing message');
+        throw new Error('Missing message in payload');
       }
 
       this.logger.log(`Client A received: ${message} from ${sender}`);
       this.messagingGateway.notifyClientA(`[${sender}] ${message}`);
       channel.ack(originalMsg);
-    } catch (err: any) {
-      this.logger.error(`Error processing message: ${err.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(
+        `Error processing message from ${originalMsg.properties?.appId || 'unknown'}: ${err.message}`,
+        err.stack,
+      );
       channel.nack(originalMsg, false, false);
     }
   }

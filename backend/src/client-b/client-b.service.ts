@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ClientBService {
@@ -7,9 +8,14 @@ export class ClientBService {
 
   constructor(@Inject('RABBITMQ_CLIENT_B') private client: ClientProxy) {}
 
-  sendMessageToClientA(message: string) {
-    const payload = { sender: 'ClientB', message };
+  async sendMessageToClientA(message: string): Promise<void> {
+    const payload = {
+      sender: 'ClientB',
+      message,
+    };
+
     this.logger.log(`Sending payload to ClientA: ${JSON.stringify(payload)}`);
-    this.client.emit('to-clientA', payload);
+
+    await firstValueFrom(this.client.emit('to-clientA', payload));
   }
 }

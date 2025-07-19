@@ -36,7 +36,7 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
     ClientBService,
     MessagingGateway,
     {
-      provide: 'RABBITMQ_CLIENT_B', // alias for DI
+      provide: 'RABBITMQ_CLIENT_B',
       useExisting: 'RABBITMQ_CLIENT_B_PUBLISHER',
     },
   ],

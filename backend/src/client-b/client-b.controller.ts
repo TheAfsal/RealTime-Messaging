@@ -9,6 +9,11 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
 import { Channel, Message } from 'amqplib';
 import { ClientBService } from './client-b.service';
 
+interface MessagePayload {
+  sender: string;
+  message: string;
+}
+
 @Controller('client-b')
 export class ClientBController {
   private readonly logger = new Logger(ClientBController.name);
@@ -21,10 +26,17 @@ export class ClientBController {
   }
 
   @Get('send')
-  sendMessage(@Query('message') message: string) {
+  async sendMessage(@Query('message') message: string) {
     const finalMessage = message || 'Hello A';
     this.logger.log(`Sending message to Client A: ${finalMessage}`);
-    return this.clientBService.sendMessageToClientA(finalMessage);
+    try {
+      await this.clientBService.sendMessageToClientA(finalMessage);
+      this.logger.log(`Message sent successfully: ${finalMessage}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to send message: ${err.message}`, err.stack);
+      throw new Error(`Send failed: ${err.message}`);
+    }
   }
 
   @MessagePattern('to-clientB')
@@ -32,27 +44,25 @@ export class ClientBController {
     const channel = context.getChannelRef() as Channel;
     const originalMsg = context.getMessage() as Message;
 
-    this.logger.log('Raw message content: ' + originalMsg.content.toString());
+    const rawContent = originalMsg.content.toString();
+    this.logger.log('Raw message content: ' + rawContent);
 
-    let parsedData;
     try {
-      const { data } = JSON.parse(originalMsg.content.toString());
-      parsedData = data;
-      console.log(parsedData);
-
-      this.logger.log('Parsed payload: ' + JSON.stringify(parsedData));
-
-      const { sender, message } = parsedData;
-      console.log(sender, message);
+      const parsed = JSON.parse(rawContent) as { data: MessagePayload };
+      const { sender, message } = parsed.data;
 
       if (!message) {
-        throw new Error('Missing message');
+        throw new Error('Missing message in payload');
       }
 
       this.messagingGateway.notifyClientB(`[${sender}] ${message}`);
       channel.ack(originalMsg);
-    } catch (err: any) {
-      this.logger.error(`Error processing message: ${err.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(
+        `Error processing message from ${originalMsg.properties?.appId || 'unknown'}: ${err.message}`,
+        err.stack,
+      );
       channel.nack(originalMsg, false, false);
     }
   }
