@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { retry, timer } from 'rxjs';
 
 @Injectable()
 export class ClientBService {
@@ -8,40 +7,9 @@ export class ClientBService {
 
   constructor(@Inject('RABBITMQ_CLIENT_B') private client: ClientProxy) {}
 
-  async sendMessageToClientA(message: string) {
-    const payload = { sender: 'clientB', message };
-    try {
-      this.logger.log(`Publishing to to-clientA: ${JSON.stringify(payload)}`);
-      await this.client
-        .emit('to-clientA', payload)
-        .pipe(
-          retry({
-            count: 5,
-            delay: (error, attempt) => {
-              if (error instanceof Error) {
-                this.logger.warn(
-                  `Retry attempt ${attempt} for sending message: ${error.message}`,
-                );
-                return timer(1000 * Math.pow(2, attempt));
-              } else {
-                this.logger.error(`Error processing message`);
-                throw error;
-              }
-            },
-          }),
-        )
-        .toPromise();
-      return { status: 'Message sent to Client A' };
-    } catch (error) {
-      if (error instanceof Error) {
-        this.logger.error(
-          `Failed to send message after retries: ${error.message}`,
-        );
-        throw new Error(`Failed to send message: ${error.message}`);
-      } else {
-        this.logger.error(`Error processing message`);
-        throw error;
-      }
-    }
+  sendMessageToClientA(message: string) {
+    const payload = { sender: 'ClientB', message };
+    this.logger.log(`Sending payload to ClientA: ${JSON.stringify(payload)}`);
+    this.client.emit('to-clientA', payload);
   }
 }

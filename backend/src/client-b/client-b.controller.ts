@@ -1,4 +1,4 @@
-import { Controller, Logger } from '@nestjs/common';
+import { Controller, Get, Logger, Query } from '@nestjs/common';
 import {
   MessagePattern,
   Ctx,
@@ -7,13 +7,24 @@ import {
 } from '@nestjs/microservices';
 import { MessagingGateway } from '../gateway/messaging.gateway';
 import { Channel, Message } from 'amqplib';
+import { ClientBService } from './client-b.service';
 
 @Controller('client-b')
 export class ClientBController {
   private readonly logger = new Logger(ClientBController.name);
 
-  constructor(private readonly messagingGateway: MessagingGateway) {
+  constructor(
+    private readonly clientBService: ClientBService,
+    private readonly messagingGateway: MessagingGateway,
+  ) {
     this.logger.log('Client B consumer client initialized');
+  }
+
+  @Get('send')
+  sendMessage(@Query('message') message: string) {
+    const finalMessage = message || 'Hello A';
+    this.logger.log(`Sending message to Client A: ${finalMessage}`);
+    return this.clientBService.sendMessageToClientA(finalMessage);
   }
 
   @MessagePattern('to-clientB')

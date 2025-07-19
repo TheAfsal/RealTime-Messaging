@@ -14,7 +14,17 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
           urls: ['amqp://guest:guest@localhost:5672'],
           queue: 'to-clientB',
           queueOptions: { durable: true },
-          noAck: true, // Publisher does not need acknowledgment
+          noAck: true,
+        },
+      },
+      {
+        name: 'RABBITMQ_CLIENT_A_CONSUMER',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://guest:guest@localhost:5672'],
+          queue: 'to-clientA',
+          queueOptions: { durable: true },
+          noAck: false,
         },
       },
     ]),
@@ -25,7 +35,7 @@ import { MessagingGateway } from '../gateway/messaging.gateway';
     MessagingGateway,
     {
       provide: 'RABBITMQ_CLIENT_A',
-      useExisting: 'RABBITMQ_CLIENT_A_PUBLISHER', // Use publisher for sending
+      useExisting: 'RABBITMQ_CLIENT_A_PUBLISHER',
     },
   ],
 })
