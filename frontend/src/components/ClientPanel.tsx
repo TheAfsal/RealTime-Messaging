@@ -1,25 +1,28 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import io from 'socket.io-client';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import io from "socket.io-client";
 
 interface ClientPanelProps {
   clientId: string;
   recipient: string;
 }
 
-const socket = io('http://localhost:3001', { transports: ['websocket'] });
+const socket = io(
+  import.meta.env.VITE_WEBSOCKET_URL || "http://localhost:3001",
+  { transports: ["websocket"] }
+);
 
 const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       console.log(`Connected to WebSocket for ${clientId}`);
       setSocketConnected(true);
     });
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       console.log(`Disconnected from WebSocket for ${clientId}`);
       setSocketConnected(false);
     });
@@ -30,8 +33,8 @@ const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
 
     return () => {
       socket.off(`message-to-${clientId}`);
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.off("connect");
+      socket.off("disconnect");
     };
   }, [clientId]);
 
@@ -42,18 +45,22 @@ const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
       await axios.get(`http://localhost:3001/${clientId}/send`, {
         params: { message },
       });
-      setMessage('');
+      setMessage("");
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
     }
   };
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">{clientId.toUpperCase()} (to {recipient})</h2>
+      <h2 className="text-xl font-semibold mb-4">
+        {clientId.toUpperCase()} (to {recipient})
+      </h2>
       <div className="mb-4 h-64 overflow-y-auto border p-2 rounded">
         {messages.map((msg, index) => (
-          <div key={index} className="mb-2">{msg}</div>
+          <div key={index} className="mb-2">
+            {msg}
+          </div>
         ))}
       </div>
       <div className="flex gap-2">
@@ -72,7 +79,7 @@ const ClientPanel: React.FC<ClientPanelProps> = ({ clientId, recipient }) => {
         </button>
       </div>
       <p className="text-sm text-gray-500 mt-2">
-        WebSocket Status: {socketConnected ? 'Connected' : 'Disconnected'}
+        WebSocket Status: {socketConnected ? "Connected" : "Disconnected"}
       </p>
     </div>
   );
